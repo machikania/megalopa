@@ -120,7 +120,7 @@
 #include "api.h"
 #include "compiler.h"
 #include "editor.h"
-#include "keyinput.h"
+#include "interface/keyinput.h"
 #include "main.h"
 
 //外付けクリスタル with PLL (20/3倍)

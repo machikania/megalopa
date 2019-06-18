@@ -157,7 +157,6 @@ char* rnd_function(){
 	return 0;
 }
 
-
 char* chr_function(void){
 	char* err;
 	err=get_value();
@@ -392,6 +391,15 @@ char* getdir_function(){
 	return 0;
 }
 
+char* exec_function(){
+	return exec_statement();
+}
+
+char* readkey_function(){
+	call_lib_code(LIB_READKEY);
+	return 0;
+}
+
 char* float_constant(float val){
 	volatile int i;
 	((float*)(&i))[0]=val;
@@ -597,6 +605,10 @@ static const void* int_func_list[]={
 	"PLAYWAVE(",playwave_function,
 	"NEW(",new_function,
 	"SETDIR(",setdir_function,
+	"TIMER(",timer_function,
+	"EXEC(",exec_function,
+	"CORETIMER(",coretimer_function,
+	"READKEY(",readkey_function,
 	// Additional functions follow
 	ADDITIONAL_INT_FUNCTIONS
 };

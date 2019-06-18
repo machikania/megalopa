@@ -168,7 +168,12 @@ unsigned char ps2readkey();
 // 上位8ビット：シフト状態（押下：1）、上位から<0><CAPSLK><NUMLK><SCRLK><Win><ALT><CTRL><SHIFT>
 // 英数・記号文字の場合、戻り値としてASCIIコード（それ以外は0を返す）
 
-// Macros for dummy functions
+// Macro(s) follows(s)
+extern unsigned short * volatile keycodebufp1; //キーコード書き込み先頭ポインタ
+extern unsigned short * volatile keycodebufp2; //キーコード読み出し先頭ポインタ
+#define keycodeExists() (keycodebufp1!=keycodebufp2)
+
+// Further macros for dummy functions
 #define ps2mode() (0)
 #define buttonmode() (0)
 #define inPS2MODE() (1)

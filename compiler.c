@@ -24,15 +24,17 @@
 	$s7:     address of call_library()
 	$t8-$t9: used as temporary registors
 	$k0-$k1: not used
-	$gp:     for accessing global valiables by C
+	$gp:     for accessing global variables by C
 	$sp:     stack pointer
-	$fp($s8) for accessing valiables by BASIC
+	$fp($s8) for accessing variables by BASIC
 	$ra:     contains return address
 */
 
 #include "compiler.h"
 
 void start_program(void* addr, void* memory){
+	// Note that if usage of $s0-$s7, and $fp is changed, 
+	// revice BasicInt() in timer.c, too.
 	static unsigned int stored_sp;
 	// Store s0-s7, fp, and ra in stacks
 	asm volatile("#":::"s0");
@@ -110,8 +112,9 @@ int nextCodeIs(char* str){
 	if (!strncmp(g_source+g_srcpos,str,len)) {
 		if ('A'<=str[len-1] && str[len-1]<='Z') {
 			// When the last character of str is alphabet, 
-			// the next character in source must be space, enter, or ':'.
-			if (0x20<g_source[g_srcpos+len] && g_source[g_srcpos+len]!=':') return 0;
+			// the next character in source must be space, enter, ',', or ':'.
+			if (0x20<g_source[g_srcpos+len] && 
+				g_source[g_srcpos+len]!=':' && g_source[g_srcpos+len]!=',') return 0;
 		}
 		// String matches in the current position in source.
 		g_srcpos+=len;
@@ -160,8 +163,10 @@ char* compile_line(void){
 			printstr(resolve_label(g_line));
 			return ERR_MULTIPLE_LABEL;
 		}
-		check_obj_space(1);
-		g_object[g_objpos++]=0x34160000|g_line; //ori         s6,zero,xxxx;
+		if (!g_option_nolinenum) {
+			check_obj_space(1);
+			g_object[g_objpos++]=0x34160000|g_line; //ori         s6,zero,xxxx;
+		}
 	}
 	while(g_source[g_srcpos]!=0x0D && g_source[g_srcpos]!=0x0A){
 		err=statement();

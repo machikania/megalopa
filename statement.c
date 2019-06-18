@@ -313,7 +313,7 @@ char* label_statement(){
 	char* err;
 	char b1;
 	b1=g_source[g_srcpos];
-	if (b1<'A' || 'Z'<b1) return ERR_SYNTAX; // Number is not allowed here.
+	if ('0'<=b1 && b1<='9') return ERR_SYNTAX; // Number is not allowed here.
 	err=get_label();
 	if (err) return err;
 	// Check existing label with the same name here.
@@ -1431,6 +1431,20 @@ char* fclose_statement(){
 	return 0;
 }
 
+/*
+
+TODO: candidates to add:
+
+int FSattrib (FSFILE * file, unsigned char attributes);
+int FSrename (const char * fileName, FSFILE * fo);
+int FSmkdir (char * path);
+int FSrmdir (char * path, unsigned char rmsubdirs);
+int SetClockVars (unsigned int year, unsigned char month, unsigned char day, unsigned char hour, unsigned char minute, unsigned char second);
+int FindFirst (const char * fileName, unsigned int attr, SearchRec * rec);
+int FindNext (SearchRec * rec);
+
+*/
+
 char* fget_statement(){
 	return param2_statement(LIB_FILE | FUNC_FGET);
 }
@@ -1548,6 +1562,42 @@ char* setdir_statement(){
 	if (err) return err;
 	call_lib_code(LIB_SETDIR);
 	return 0;
+}
+
+char* option_statement(){
+	while(1){
+		next_position();
+		if (nextCodeIs("NOLINENUM")) {
+			g_option_nolinenum=1;
+		} else if (nextCodeIs("FASTFIELD")) {
+			g_option_fastfield=1;
+		} else if (nextCodeIs("CLASSCODE")) {
+			if (g_compiling_class) {
+				// Do nothing. Do not try to rewind the object,
+				// as an exception will occur if you will do this.
+				// There are many things to reset if the created
+				// object will be deleted.
+			} else {
+				// End the compile of main file
+				return ERR_OPTION_CLASSCODE;
+			}
+		} else {
+			return ERR_SYNTAX;
+		}
+		next_position();
+		if (g_source[g_srcpos]==',') {
+			g_srcpos++;
+		} else {
+			break;
+		}
+	}
+	return 0;
+}
+
+char* idle_statement(){
+	check_obj_space(2);
+	g_object[g_objpos++]=0x42000020; // wait
+	return 0;	
 }
 
 #ifdef __DEBUG
@@ -1698,6 +1748,12 @@ static const void* statement_list[]={
 	"CALL ",call_statement,
 	"STATIC ",static_statement,
 	"SETDIR ",setdir_statement,
+	"OPTION ",option_statement,
+	"USETIMER ",usetimer_statement,
+	"TIMER ",timer_statement,
+	"INTERRUPT ",interrupt_statement,
+	"IDLE",idle_statement,
+	"CORETIMER",coretimer_statement,
 	// List of additional statements follows
 	ADDITIONAL_STATEMENTS
 };

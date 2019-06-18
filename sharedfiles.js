@@ -28,6 +28,7 @@ var filearray=[
 	'run.c',
 	'string.c',
 	'statement.c',
+	'timer.c',
 	'value.c',
 	'varname.c',
 	'compiler.h',

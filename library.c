@@ -13,7 +13,7 @@
 #include "main.h"
 #include "compiler.h"
 #include "api.h"
-#include "keyinput.h"
+#include "interface/keyinput.h"
 #include "stdlib.h"
 #include "math.h"
 
@@ -943,6 +943,11 @@ int lib_file(enum functions func, int a0, int a1, int v0){
 	return v0;
 }
 
+int lib_readkey(){
+	int ret=ps2readkey();
+	return ret|(vkey<<8);
+}
+
 int _call_library(int a0,int a1,int a2,enum libs a3);
 
 void call_library(void){
@@ -1011,6 +1016,8 @@ int _call_library(int a0,int a1,int v0,enum libs a3){
 			return lib_keys(v0);
 		case LIB_INKEY:
 			return (int)lib_inkey(v0);
+		case LIB_READKEY:
+			return lib_readkey();
 		case LIB_CURSOR:
 			setcursor(g_libparams[1],v0,cursorcolor);
 			return v0;

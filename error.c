@@ -41,6 +41,7 @@ const char* g_err_str[]={
 	"Valid only in class file",
 	"Invalid in class file",
 	"INIT method does not exist",
+	"ERR_OPTION_CLASSCODE",
 };
 
 char* resolve_label(int s6){
@@ -62,15 +63,16 @@ char* resolve_label(int s6){
 		s6-=65536;
 		str[6]=0x00;
 		for(i=5;0<=i;i--){
-			if (s6<36) {
-				// First character must be A-Z, corresponding to 1-26 but not 10-35.
+			if (s6<37) {
+				// First character must be A-Z or _, corresponding to 1-27 but not 10-36.
 				// See get_label() for the detail.
-				str[i]=s6-1+'A';
+				if (s6==27) str[i]='_';
+				else str[i]=s6-1+'A';
 				break;
 			} else {
-				// From second, 0-9 corresponds to 0-9 and A-Z corresponds to 10-35.
-				str[i]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[rem36_32(s6)];
-				s6=div36_32(s6);
+				// From second, 0-9 corresponds to 0-9 and A-Z corresponds to 10-36.
+				str[i]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_"[rem37_31(s6)];
+				s6=div37_31(s6);
 			}
 		}
 		return (char*)(str+i);

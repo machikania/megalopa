@@ -116,6 +116,7 @@ int runbasic(char *appname,int test){
 
 	// Warm up environment
 	pre_run();
+	init_timer();
 
 	// Execute program
 	// Start program from the beginning of RAM.
@@ -126,6 +127,7 @@ int runbasic(char *appname,int test){
 	// Cool down environment
 	post_run();
 	lib_file(FUNC_FINIT,0,0,0);
+	stop_timer();
 
 	return 0;
 }

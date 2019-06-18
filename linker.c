@@ -44,17 +44,19 @@ char* get_label(void){
 			g_label=0;
 			return 0;
 		}
-	} else if ('A'<=b1 && b1<='Z') {
+	} else if ('A'<=b1 && b1<='Z' || b1=='_') {
 		// May be label
+		// When changing here, see also chech_var_name()
 		do {
-			// First character must be A-Z
-			// From second, A-Z and 0-9 can be used.
-			i*=36;
+			// First character must be A-Z or _
+			// From second, A-Z, _, and 0-9 can be used.
+			i*=37;
+			if (b1=='_') b1='Z'+1;
 			if ('0'<=b1 && b1<='9') {
 				i+=b1-'0';
 			} else if (g_srcpos==prevpos) {
-				// First character must be A-Z.
-				// Subtract 9, resulting 1-26 but not 10-35.
+				// First character must be A-Z or _.
+				// Subtract 9, resulting in 1-27 but not 10-36.
 				// This subtraction is required to maintain
 				// final number being <0x80000000.
 				i+=b1-'A'+1;
@@ -63,7 +65,7 @@ char* get_label(void){
 			}
 			g_srcpos++;
 			b1=g_source[g_srcpos];
-		} while ('0'<= b1 && b1<='9' || 'A'<=b1 && b1<='Z');
+		} while ('0'<= b1 && b1<='9' || 'A'<=b1 && b1<='Z' || b1=='_');
 		// Length of the label must be between 2 and 6.
 		if (g_srcpos-prevpos<2 || 6<g_srcpos-prevpos) {
 			g_srcpos=prevpos;

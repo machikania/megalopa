@@ -33,6 +33,14 @@ static int* g_class_structure;
 		record[1]: field/method name as integer
 		record[2]: pointer to method
 */
+/*
+	CMPDATA_FASTFIELD structure
+		type:      CMPDATA_FASTFIELD
+		len:       2
+		data16:    number of position of public field in object
+		           0 for multiple usage of the same public field name
+		record[1]: field name as integer
+*/
 
 /*
 	CMPDATA_STATIC structure
@@ -59,6 +67,24 @@ static int* g_class_structure;
 		record[2]: method name as integer
 		record[3]: address of code for pointer to method
 
+*/
+
+/*
+	About fast field access
+		When a public field name used only once with a class, 
+		the address of this field of an object is defined quickly when compiling.
+		This logic is always true when there is only a class.
+
+		However, if there are more than two classes and the field name is used
+		by only a class, this logic is true only when the BASIC code does not have
+		error. If there is an error in BASIC code, this type of error cannot be 
+		found by compiler and when executing.
+
+		Therefore, only use this logic when the number of class is one, and/or 
+		OPTION FASTFIELD is defined.
+
+		This logic is useless for public method, because library must be always called
+		before calling public method.
 */
 
 /*
@@ -157,7 +183,8 @@ char* resolve_unresolved(int class){
 				break;
 			default:
 				return ERR_UNKNOWN;
-		}	}
+		}
+	}
 	return 0;	
 }
 
@@ -192,6 +219,15 @@ char* update_class_info(int class){
 		cstruct[y+1]: private field var number
 		cstruct[z]:   public method name
 		cstruct[z+1]: public method pointer
+*/
+
+/*
+	Object structure:
+		object[0]:   pointer to class structure
+		object[1]:   field value
+		...
+		object[n]:   field value
+		(according to class structure; public field(s) first, then private field(s))
 */
 
 char* construct_class_structure(int class){
@@ -249,10 +285,36 @@ char* construct_class_structure(int class){
 
 void delete_cmpdata_for_class(int class){
 	int* record;
+	int i;
+	short pos;
 	// Delete field/method data
 	cmpdata_reset();
+	pos=0; // # of position of public field
 	while(record=cmpdata_find(CMPDATA_FIELD)){
-		cmpdata_delete(record);
+		if ((record[0]&0xffff)==CMPTYPE_PUBLIC_FIELD) {
+			pos++;
+			i=record[1]; // Field name
+			cmpdata_delete(record);
+			// Construct or disable CMPDATA_FASTFIELD
+			// Note that the sequence of public fields here is the same
+			// as that in the function, construct_class_struction().
+			cmpdata_reset();
+			while(record=cmpdata_find(CMPDATA_FASTFIELD)){
+				if (record[1]==i) break;
+			}
+			if (record) {
+				// Multiple definition of field name
+				// Clear data16 if the position is different
+				if (pos!=(record[0]&0xffff)) record[0]&=0xffff0000;
+			} else { 
+				// Previous CMPDATA_FASTFIELD not found
+				// Create now one for fast field implementation
+				g_temp=i;
+				cmpdata_insert(CMPDATA_FASTFIELD,pos,&g_temp,1);
+			}
+		} else {
+			cmpdata_delete(record);
+		}
 		cmpdata_reset();
 	}	
 	// Delete longvar data
@@ -478,6 +540,8 @@ char* _obj_field(char mode){
 	// $v0 contains the address of object.
 	int i;
 	char* err;
+	int* record;
+	char fastfield;
 	do {
 		i=check_var_name();
 		if (i<65536) return ERR_SYNTAX;
@@ -496,11 +560,38 @@ char* _obj_field(char mode){
 			// This is a string field. Raise 31st bit.
 			i|=0x80000000;
 		}
-		check_obj_space(2);
-		g_object[g_objpos++]=0x3C050000|((i>>16)&0x0000FFFF); // lui   a1,xxxx
-		g_object[g_objpos++]=0x34A50000|(i&0x0000FFFF);       // ori a1,a1,xxxx
-		// First and second arguments are address of object and field name, respectively.
-		call_quicklib_code(lib_obj_field,ASM_ADDU_A0_V0_ZERO);
+		// Check if Fast Field Access can be used.
+		cmpdata_reset();
+		while(record=cmpdata_find(CMPDATA_FASTFIELD)){
+			if (record[1]==(i&0x7FFFFFFF)) break;
+		}
+		if (!record) {
+			// Record wasn't found
+			fastfield=0;
+		} else if (1!=g_num_classes && !g_option_fastfield) {
+			// No fast field option
+			fastfield=0;
+		} else if (!(record[0]&0xffff)) {
+			// The same field name used twice at the different positions
+			fastfield=0;
+		} else {
+			// All requirements passed
+			fastfield=1;
+		}
+		// Generate code here
+		if (fastfield) {
+			// Get field value in $v0 and address in $v1
+			i=(record[0]&0xffff)*4;
+			check_obj_space(2);
+			g_object[g_objpos++]=0x24430004|i; // addiu v1,v0,xxxx
+			g_object[g_objpos++]=0x8C620000;   // lw v0,0(v1)
+		} else {
+			check_obj_space(2);
+			g_object[g_objpos++]=0x3C050000|((i>>16)&0x0000FFFF); // lui   a1,xxxx
+			g_object[g_objpos++]=0x34A50000|(i&0x0000FFFF);       // ori a1,a1,xxxx
+			// First and second arguments are address of object and field name, respectively.
+			call_quicklib_code(lib_obj_field,ASM_ADDU_A0_V0_ZERO);
+		}
 		// Check if "." follows
 		if (g_source[g_srcpos]=='.') {
 			// "." found. $v0 is adress of an object. See the field.

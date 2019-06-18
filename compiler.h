@@ -125,6 +125,7 @@ enum libs{
 	LIB_SETDIR         =LIB_STEP*51,
 	LIB_SETDIRFUNC     =LIB_STEP*52,
 	LIB_GETDIR         =LIB_STEP*53,
+	LIB_READKEY        =LIB_STEP*54,
 	LIB_DEBUG          =LIB_STEP*127,
 };
 
@@ -213,6 +214,7 @@ extern int g_var_mem[ALLOC_BLOCK_NUM];
 extern unsigned short g_var_pointer[ALLOC_BLOCK_NUM];
 extern unsigned short g_var_size[ALLOC_BLOCK_NUM];
 extern char g_temp_area_used;
+extern char g_option_nolinenum;
 extern int* g_heap_mem;
 extern int g_max_mem;
 extern char g_disable_break;
@@ -221,8 +223,11 @@ extern char g_use_graphic;
 extern unsigned short* g_graphic_area;
 extern int* g_libparams;
 extern int g_long_name_var_num;
+extern char g_music_active;
 extern int g_class;
 extern int g_compiling_class;
+extern unsigned char g_num_classes;
+extern char g_option_fastfield;
 extern int g_temp;
 
 /* Prototypes */
@@ -236,6 +241,7 @@ int endOfStatement();
 
 char* init_file(char* buff,char* appname);
 void close_file();
+int filepoint();
 void read_file(int blocklen);
 char* compile_file();
 int compile_and_link_file(char* buff,char* appname);
@@ -260,6 +266,7 @@ void err_not_field(int fieldname, int classname);
 void err_str(char* str);
 char* resolve_label(int s6);
 
+void musicint();
 void set_sound(unsigned long* data, int flagsLR);
 int musicRemaining(int flagsLR);
 int waveRemaining(int mode);
@@ -277,6 +284,7 @@ char* fput_statement();
 char* fputc_statement();
 char* fremove_statement();
 char* label_statement();
+char* exec_statement();
 
 char* function(void);
 char* str_function(void);
@@ -367,6 +375,15 @@ char* static_statement();
 char* static_method(char type);
 char* resolve_unresolved(int class);
 
+void init_timer();
+void stop_timer();
+char* usetimer_statement();
+char* timer_statement();
+char* timer_function();
+char* coretimer_statement();
+char* coretimer_function();
+char* interrupt_statement();
+
 /* Error messages */
 #define ERR_SYNTAX (char*)(g_err_str[0])
 #define ERR_NE_BINARY (char*)(g_err_str[1])
@@ -397,15 +414,17 @@ char* resolve_unresolved(int class);
 #define ERR_INVALID_NON_CLASS (char*)(g_err_str[26])
 #define ERR_INVALID_CLASS (char*)(g_err_str[27])
 #define ERR_NO_INIT (char*)(g_err_str[28])
+#define ERR_OPTION_CLASSCODE (char*)(g_err_str[29])
 
 /* compile data type numbers */
-#define CMPDATA_RESERVED 0
-#define CMPDATA_USEVAR   1
-#define CMPDATA_CLASS    2
-#define CMPDATA_FIELD    3
-#define CMPDATA_STATIC   4
-#define CMPDATA_UNSOLVED 5
-#define CMPDATA_TEMP     6
+#define CMPDATA_RESERVED  0
+#define CMPDATA_USEVAR    1
+#define CMPDATA_CLASS     2
+#define CMPDATA_FIELD     3
+#define CMPDATA_STATIC    4
+#define CMPDATA_UNSOLVED  5
+#define CMPDATA_TEMP      6
+#define CMPDATA_FASTFIELD 7
 // Sub types follow
 #define CMPTYPE_PUBLIC_FIELD 0
 #define CMPTYPE_PRIVATE_FIELD 1
@@ -433,7 +452,7 @@ char* resolve_unresolved(int class);
 /* Macros */
 
 // Lables as 31 bit integer
-#define LABEL_INIT 0x0007df55
+#define LABEL_INIT 0x0008727b
 
 // Skip blanc(s) in source code
 #define next_position() while(g_source[g_srcpos]==' ') {g_srcpos++;}
@@ -474,9 +493,33 @@ char* resolve_unresolved(int class);
 #define ASM_LW_A0_XXXX_S8 0x8FC40000
 #define ASM_LW_A0_XXXX_S5 0x8EA40000
 
+// Interrupt macros
+// 32 different type interruptions are possible
+// See also envspecific.h for additional interruptions
+#define INTERRUPT_TIMER     0
+#define INTERRUPT_DRAWCOUNT 1
+#define INTERRUPT_KEYS      2
+#define INTERRUPT_INKEY     3
+#define INTERRUPT_MUSIC     4
+#define INTERRUPT_WAVE      5
+#define INTERRUPT_CORETIMER 6
+
+extern int g_interrupt_flags;
+extern int g_int_vector[];
+#define raise_interrupt_flag(x) do {\
+	if (g_int_vector[x]) {\
+		IFS0bits.CS1IF=1;\
+		g_interrupt_flags|=(1<<(x));\
+	}\
+} while(0)
+
 // Division macro for unsigned long
 // Valid for 31 bits for all cases and 32 bits for some cases
 #define div32(x,y,z) ((((unsigned long long)((unsigned long)(x)))*((unsigned long long)((unsigned long)(y))))>>(z))
+
+// Divide by 8 (valid for 32 bits)
+#define div8_32(x) (((unsigned long)(x))>>3)
+#define rem8_32(x) ((x)&0x07)
 
 // Divide by 9 (valid for 32 bits)
 #define div9_32(x) div32(x,0xe38e38e4,35)
@@ -489,6 +532,10 @@ char* resolve_unresolved(int class);
 // Divide by 36 (valid for 32 bits)
 #define div36_32(x) div32(x,0xe38e38e4,37)
 #define rem36_32(x) (x-36*div36_32(x))
+
+// Divide by 37 (valid for 31 bits)
+#define div37_31(x) div32(x,0xdd67c8a7,37)
+#define rem37_31(x) (x-37*div37_31(x))
 
 // Check if within RAM
 #define withinRAM(x) ((&RAM[0])<=((char*)(x)) && ((char*)(x))<(&RAM[RAMSIZE]))

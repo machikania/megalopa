@@ -228,32 +228,28 @@ static const char initext[]=
 "#PRINT\n";
 
 static const char bastext[]=
-"print getdir$()\n"
-"end\n"
-"\n"
-"\n"
+"USECLASS CLASS1,CLASS2\n"
+"OPTION FASTFIELD\n"
+"CLS\n"
+"o=new(CLASS1)\n"
+"o.T1=123\n"
+"print o.T2()\n"
 "\n"
 "\n"
 "\n"
 "\n";
 
 static const char class1text[]=
-"STATIC T1\n"
-"useclass CLASS2\n"
-"method T3\n"
-" return CLASS2::T2\n"
-"method T5\n"
-" return T1\n"
+"FIELD T1\n"
+"method T2\n"
+" return T1+100\n"
 "\n"
 "\n";
 
 static const char class2text[]=
-"STATIC T2\n"
-"useclass CLASS1\n"
-"method T4\n"
-" return CLASS1::T1\n"
+"FIELD T3\n"
 "method T6\n"
-" return T2\n"
+" return T3+100\n"
 "\n"
 "\n"
 "\n"
@@ -268,12 +264,15 @@ static const void* debugjumptable[]={
 	FSfopen,
 };
 
+#define for2(x,y,z) for(x=y;x<=z;x++)
+
 int _debug_test(int a0, int a1, int a2, int a3, int param4, int param5){
 	asm volatile(".set noreorder");
-	asm volatile("lw $a0,4($s5)");
-	asm volatile("lw $a1,8($s5)");
-	asm volatile("lw $a2,12($s5)");
-	asm volatile("lw $a3,16($s5)");
+	asm volatile("addiu $v0,$zero,4772");
+	asm volatile("loop:");
+	asm volatile("bne $v0,$zero,loop");
+	asm volatile("addi $v0,$v0,-1");
+	asm volatile("wait");
 	asm volatile("nop");
 	asm volatile("nop");
 	asm volatile("nop");
@@ -281,6 +280,8 @@ int _debug_test(int a0, int a1, int a2, int a3, int param4, int param5){
 	asm volatile("nop");
 	asm volatile("nop");
 	asm volatile("nop");
+	asm volatile("nop");
+	a2&=0xFFFFFFFC;
 	return a2+a3;
 }
 

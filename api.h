@@ -32,9 +32,9 @@
 // Used for asm("wait")
 #define WAIT "wait"
 
-#include "lib_video_megalopa.h"
-#include "sdfsio370f.h"
-#include "ps2keyboard.h"
+#include "interface/lib_video_megalopa.h"
+#include "interface/sdfsio370f.h"
+#include "interface/ps2keyboard.h"
 #include "debug.h"
 
 // Palette is shared between text and graphic

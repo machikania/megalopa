@@ -8,8 +8,33 @@
 #include <xc.h>
 #include "main.h"
 #include "compiler.h"
-#include "lib_video_megalopa.h"
-#include "ps2keyboard.h"
+#include "api.h"
+
+/*
+	void printcomma();
+	30, 36, 40, 48, 64, 80 characters per line for Megalopa
+*/
+
+void printcomma(void){
+	switch(textmode){
+		case TMODE_STDTEXT: // 36
+			// Every 9 characters
+			printstr("         "+rem9_32((unsigned int)(cursor-TVRAM)));
+			break;
+		case TMODE_WIDETEXT: // 48
+		case TMODE_WIDETEXT6dot: // 64
+			// Every 8 characters
+			printstr("        "+rem8_32((unsigned int)(cursor-TVRAM)));
+			break;
+		case TMODE_T30: // 30
+		case TMODE_T40: // 40
+		case TMODE_MONOTEXT: // 80
+		default:
+			// Every 10 characters
+			printstr("          "+rem10_32((unsigned int)(cursor-TVRAM)));
+			break;
+	}
+}
 
 /*
 	int readbuttons();
@@ -257,11 +282,12 @@ int lib_system(int a0, int a1 ,int v0, int a3, int g_gcolor, int g_prev_x, int g
 			return v0;
 	}
 	switch(a0){
-		// Version info
+		// Version info etc
 		case 0: return (int)SYSVER1;
 		case 1: return (int)SYSVER2;
 		case 2: return (int)BASVER;
 		case 3: return (int)FILENAME_FLASH_ADDRESS;
+		case 4: return (int)CPU_CLOCK_HZ;
 		// Display info
 		case 20: return twidth;
 		case 21: return twidthy;

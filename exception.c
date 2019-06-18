@@ -44,7 +44,12 @@ void dumpMemory(){
 void dumpMemory(){}
 #endif //ifdef DUMPFILE
 
+void _general_exception_handler_main (void);
 void _general_exception_handler (void){
+	asm volatile("la $sp,%0"::"i"(&RAM[RAMSIZE-4]));
+	asm volatile("j _general_exception_handler_main");
+}
+void _general_exception_handler_main (void){
 	int i;
 	// $v1 is g_ex_data
 	asm volatile("la $v1,%0"::"i"(&g_ex_data[0]));
@@ -79,7 +84,9 @@ void _general_exception_handler (void){
 			if((readbuttons()&(KEYUP|KEYDOWN|KEYLEFT|KEYRIGHT|KEYSTART|KEYFIRE))
 				!=(KEYUP|KEYDOWN|KEYLEFT|KEYRIGHT|KEYSTART|KEYFIRE)) i=0;
 		}
-		asm volatile("j SoftReset");
+		RCONbits.POR=0;
+		RCONbits.EXTR=0;
+		asm volatile("j 0x9FC00000");
 	#endif
 }
 

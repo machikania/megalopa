@@ -142,7 +142,6 @@ int waveRemaining(int mode){
 	return ret;
 }
 
-#pragma interrupt musicint IPL2SOFT vector 1
 void musicint(){
 	static unsigned short wavtable_pos;
 	static int music_freq_L=0;
@@ -151,7 +150,6 @@ void musicint(){
 	static int music_timer_R=0;
 	unsigned int i,j;
 	// This function is called every 1/60 sec.
-	IFS0bits.CS0IF=0;
 	switch(g_sound_mode){
 		case SOUND_MODE_WAVE:
 			// Initialize parameters
@@ -169,6 +167,8 @@ void musicint(){
 				g_fhandle=0;
 				g_sound_mode=SOUND_MODE_NONE;
 				stop_music();
+				// Raise WAVE interrupt flag
+				raise_interrupt_flag(INTERRUPT_WAVE);
 				break;
 			}
 			// Continue to MUSIC sound mode
@@ -197,6 +197,10 @@ void musicint(){
 						g_musicstartL++;
 						g_musicstartL&=31;
 						g_musicwaitL=g_musiclenL[g_musicstartL];
+						if (((g_musicstartL+1)&31)==g_musicendL) {
+							// Raise MUSIC interrupt flag
+							raise_interrupt_flag(INTERRUPT_MUSIC);
+						}
 					}
 				}
 			} else if (g_musicstartL!=g_musicendL) {
@@ -206,6 +210,10 @@ void musicint(){
 					g_musicstartL++;
 					g_musicstartL&=31;
 					g_musicwaitL=g_musiclenL[g_musicstartL];
+					if (((g_musicstartL+1)&31)==g_musicendL) {
+						// Raise MUSIC interrupt flag
+						raise_interrupt_flag(INTERRUPT_MUSIC);
+					}
 				}
 			} else {
 				music_freq_L=0;
@@ -234,6 +242,10 @@ void musicint(){
 						g_musicstartR++;
 						g_musicstartR&=31;
 						g_musicwaitR=g_musiclenR[g_musicstartR];
+						if (((g_musicstartR+1)&31)==g_musicendR) {
+							// Raise MUSIC interrupt flag
+							raise_interrupt_flag(INTERRUPT_MUSIC);
+						}
 					}
 				}
 			} else if (g_musicstartR!=g_musicendR) {
@@ -243,6 +255,10 @@ void musicint(){
 					g_musicstartR++;
 					g_musicstartR&=31;
 					g_musicwaitR=g_musiclenR[g_musicstartR];
+					if (((g_musicstartR+1)&31)==g_musicendR) {
+						// Raise MUSIC interrupt flag
+						raise_interrupt_flag(INTERRUPT_MUSIC);
+					}
 				}
 			} else {
 				music_freq_R=0;
@@ -420,11 +436,6 @@ void init_music(){
 
 	// Move OC4RS and OC3 RS from 0x00 to 0x80
 	g_sound_mode=SOUND_MODE_NONE;
-	// Enable interrupt
-	IPC0bits.CS0IP=2;
-	IPC0bits.CS0IS=0;
-	IFS0bits.CS0IF=0;
-	IEC0bits.CS0IE=1;
 }
 
 void musicSetL(){
@@ -629,6 +640,7 @@ void set_sound(unsigned long* data, int flagsLR){
 	if (flagsLR & MFLAG_L) g_soundwaitL=g_soundlenL[0];
 	if (flagsLR & MFLAG_R) g_soundwaitR=g_soundlenR[0];
 	IEC0bits.CS0IE=1; // Restart interrupt.
+	g_music_active=1;// Activate music system
 }
 
 void set_music(char* str, int flagsLR){
@@ -741,6 +753,7 @@ void set_music(char* str, int flagsLR){
 		// Go to next character
 		while(0<g_mstr[g_mspos] && g_mstr[g_mspos]<=0x20 || g_mstr[g_mspos]=='|') g_mspos++;
 	}
+	g_music_active=1;// Activate music system
 }
 
 /*
@@ -886,6 +899,7 @@ void play_wave(char* filename, int start){
 	// Enable intterupt
 	IFS0bits.CS0IF=0;
 	IEC0bits.CS0IE=1;
+	g_music_active=1;// Activate music system
 }
 
 void stop_music(){
@@ -899,4 +913,6 @@ void stop_music(){
 		FSfclose(g_fhandle);
 		g_fhandle=0;
 	}
+	// Inactive music
+	g_music_active=0;
 }
