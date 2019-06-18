@@ -9,7 +9,9 @@
 #include "io.h"
 
 #define CPU_CLOCK_HZ 95454533
-#define PERSISTENT_RAM_SIZE (1024*100)
+#define PERSISTENT_RAM_SIZE (1024*100) // 0x19000
+#define MACHIKANIA_OBJ_ADDRESS (0x9D080000 - (0x19000))
+#define MACHIKANIA_OBJ_INFO (MACHIKANIA_OBJ_ADDRESS-16)
 
 int readbuttons();
 void scroll(int x, int y);

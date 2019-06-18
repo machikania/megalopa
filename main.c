@@ -212,6 +212,7 @@ int searchinittext(char *s){
 void readinifile(void){
 	FSFILE *fp;
 	char inittext[9];
+	if (!g_fs_valid) return;
 
 	fp=FSfopen(INIFILE,"r");
 	if(fp==NULL) return;
@@ -267,6 +268,7 @@ void printhex32(unsigned int d){
 
 int main(void){
 	char *appname,*s;
+	int use_editor;
 
 	/* ポートの初期設定 */
 	CNPUB = 0xFFFF; // PORTB全てプルアップ(I/O)
@@ -305,6 +307,18 @@ int main(void){
 	// Show blue screen if exception before soft reset.
 	blue_screen();
 
+	// 実行中HEXファイル名がHEXFILEと一致するかどうか
+	use_editor=0;
+	appname=(char*)FILENAME_FLASH_ADDRESS;
+	s=HEXFILE;
+	while(*s++==*appname++) {
+		if(*s==0) {
+			//テキストエディター呼び出し
+			use_editor=1;
+			break;
+		}
+	}
+
 	printstr("MachiKania BASIC System\n");
 	printstr(" Ver "SYSVER1" "SYSVER2" by KENKEN\n");
 	printstr("BASIC Compiler "BASVER"\n");
@@ -313,15 +327,25 @@ int main(void){
 	setcursorcolor(COLOR_NORMALTEXT);
 	printstr("Init File System...");
 	// Initialize the File System
-	if(FSInit()==FALSE){ //ファイルシステム初期化
-		//エラーの場合停止
-		setcursorcolor(COLOR_ERRORTEXT);
-		printstr("\nFile System Error\n");
-		printstr("Insert Correct Card\n");
-		printstr("And Reset\n");
-		while(1) asm("wait");
+	g_fs_valid=FSInit(); //ファイルシステム初期化
+	if(g_fs_valid==FALSE){
+		if (use_editor || !g_objpos_mos) {
+			// Editorモードの場合、及び、BASファイル読み込みモードの場合
+			//エラーの場合停止
+			setcursorcolor(COLOR_ERRORTEXT);
+			printstr("\nFile System Error\n");
+			printstr("Insert Correct Card\n");
+			printstr("And Reset\n");
+			while(1) asm("wait");
+		} else {
+			// MOSモードの場合は、あと二回、トライ
+			// エラー表示の後、続ける
+			g_fs_valid=FSInit();
+			if(g_fs_valid==FALSE) g_fs_valid=FSInit();
+		}
 	}
-	printstr("OK\n");
+	if (g_fs_valid) printstr("OK\n");
+	else printstr("Failed\n");
 
 	// 音源初期化
 	OC4RS=LATFbits.LATF5 ? 0xff:0x00;
@@ -345,19 +369,22 @@ int main(void){
 	set_videomode(initialvmode,0); //ビデオモード切替
 
 	// 実行中HEXファイル名がHEXFILEと一致した場合はエディタ起動
-	appname=(char*)FILENAME_FLASH_ADDRESS;
-	s=HEXFILE;
-	while(*s++==*appname++) if(*s==0) texteditor(); //テキストエディター呼び出し
+	if(use_editor) texteditor(); //テキストエディター呼び出し
 
-	// 実行中HEXファイル名の「.HEX」を「.BAS」に置き換えてBASファイルを実行
-	appname=(char*)FILENAME_FLASH_ADDRESS;
-	s=tempfile;
-	while(*appname!='.') *s++=*appname++;
-	appname=".BAS";
-	while(*appname!=0) *s++=*appname++;
-	*s=0;
-	// buttonmode(); //ボタン有効化
 	g_disable_break=1; // Breakキー無効化
-	runbasic(tempfile,0);
+	// buttonmode(); //ボタン有効化
+	if (g_objpos_mos) {
+		// MOSからコードをコピーして実行
+		runbasic(0,2);
+	} else {
+		// 実行中HEXファイル名の「.HEX」を「.BAS」に置き換えてBASファイルを実行
+		appname=(char*)FILENAME_FLASH_ADDRESS;
+		s=tempfile;
+		while(*appname!='.') *s++=*appname++;
+		appname=".BAS";
+		while(*appname!=0) *s++=*appname++;
+		*s=0;
+		runbasic(tempfile,0);
+	}
 	while(1) asm(WAIT);
 }

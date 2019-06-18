@@ -12,6 +12,13 @@
 #include "compiler.h"
 #include "main.h"
 
+// Store g_object/g_objpos values for MOS at jest before MACHIKANIA_OBJ_ADDRESS.
+// When these values are 0, MOS code is not loaded.
+const volatile int __attribute__((address(MACHIKANIA_OBJ_ADDRESS-16))) _reserved1_mos=0;
+const volatile int __attribute__((address(MACHIKANIA_OBJ_ADDRESS-12))) _reserved2_mos=0;
+const volatile int __attribute__((address(MACHIKANIA_OBJ_ADDRESS-8)))  g_object_mos=0;
+const volatile int __attribute__((address(MACHIKANIA_OBJ_ADDRESS-4)))  g_objpos_mos=0;
+
 // Contain the valus of $gp and $s6 (GPR of MIPS32)
 int g_gp;
 int g_s6;
@@ -94,6 +101,16 @@ int g_compiling_class;
 unsigned char g_num_classes;
 // OPTION FASTFIELD
 char g_option_fastfield;
+
+// Flag if file system has been initialized
+char g_fs_valid;
+
+// Result of reading a HEX file line
+HEXLINE g_hexline;
+
+// Stack to store $gp
+void* g_gp_stack[8];
+void* g_gp_stack_pointer=&g_gp_stack[0];
 
 // General purpose integer used for asigning value with pointer
 int g_temp;

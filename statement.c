@@ -9,6 +9,13 @@
 	This file is shared by Megalopa and Zoea
 */
 
+/*
+	All the code from this file will be assigned in MachiKania Object Section (MOS).
+	MOS will be replaced by BASIC object when constructing self-running HEX file.
+	Therefore, DO NOT place any run-time routine/romdata in this file.
+	See the MOS definition in liker script.
+*/
+
 #include "api.h"
 #include "compiler.h"
 
@@ -1435,11 +1442,11 @@ char* fclose_statement(){
 
 TODO: candidates to add:
 
-int FSattrib (FSFILE * file, unsigned char attributes);
+// int FSattrib (FSFILE * file, unsigned char attributes);
 int FSrename (const char * fileName, FSFILE * fo);
 int FSmkdir (char * path);
 int FSrmdir (char * path, unsigned char rmsubdirs);
-int SetClockVars (unsigned int year, unsigned char month, unsigned char day, unsigned char hour, unsigned char minute, unsigned char second);
+// int SetClockVars (unsigned int year, unsigned char month, unsigned char day, unsigned char hour, unsigned char minute, unsigned char second);
 int FindFirst (const char * fileName, unsigned int attr, SearchRec * rec);
 int FindNext (SearchRec * rec);
 
@@ -1754,6 +1761,8 @@ static const void* statement_list[]={
 	"INTERRUPT ",interrupt_statement,
 	"IDLE",idle_statement,
 	"CORETIMER",coretimer_statement,
+	"USECLIB",useclib_statement,
+	"CLIB",clib_statement,
 	// List of additional statements follows
 	ADDITIONAL_STATEMENTS
 };

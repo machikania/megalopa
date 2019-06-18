@@ -40,6 +40,14 @@
 // RAM size used for object and heap
 #define RAMSIZE (PERSISTENT_RAM_SIZE-EXCEPTION_DATA_SIZE)
 
+/* Structures */
+typedef struct{
+	unsigned char  size;
+	unsigned short address;
+	unsigned char  type;
+	unsigned char data[16];
+} HEXLINE;
+
 /* Enums */
 enum variable{
 	VAR_INTEGER,
@@ -187,6 +195,8 @@ enum functions{
 };
 
 /* Global vars (see globalvers.c) */
+extern const volatile int g_object_mos;
+extern const volatile int g_objpos_mos;
 extern int g_intconst;
 extern char g_valueisconst;
 extern unsigned int g_rnd_seed;
@@ -228,6 +238,8 @@ extern int g_class;
 extern int g_compiling_class;
 extern unsigned char g_num_classes;
 extern char g_option_fastfield;
+extern HEXLINE g_hexline;
+extern char g_fs_valid;
 extern int g_temp;
 
 /* Prototypes */
@@ -247,6 +259,7 @@ char* compile_file();
 int compile_and_link_file(char* buff,char* appname);
 int compile_and_link_main_file(char* buff,char* appname);
 int compile_and_link_class(char* buff,int class);
+int create_self_running_hex(char* hexfilename);
 
 void err_break(void);
 void err_music(char* str);
@@ -340,6 +353,7 @@ int* cmpdata_findfirst(unsigned char type);
 void cmpdata_delete(int* record);
 
 int check_var_name();
+int str_to_name_int(char* str);
 int get_var_number();
 int search_var_name(int nameint);
 char* register_var_name(int nameint);
@@ -384,6 +398,24 @@ char* coretimer_statement();
 char* coretimer_function();
 char* interrupt_statement();
 
+void init_clib();
+char* useclib_statement();
+char* useclib_begin(char* buff);
+char* clib_method(char type);
+char* clib_statement();
+
+char* hex_init_file(char* buff,char* filename);
+void hex_reinit_file();
+void hex_close_file();
+char* hex_read_line();
+char* hex_construct_line();
+#ifdef  FS_DOT_H
+	char* hex_write(FSFILE* fhandle);
+	char* hex_write_address(FSFILE* fhandle,unsigned short addr);
+	char* hex_write_data_16(FSFILE* fhandle,unsigned short addr,unsigned int* object);
+	char* hex_write_eof(FSFILE* fhandle);
+#endif
+
 /* Error messages */
 #define ERR_SYNTAX (char*)(g_err_str[0])
 #define ERR_NE_BINARY (char*)(g_err_str[1])
@@ -415,6 +447,10 @@ char* interrupt_statement();
 #define ERR_INVALID_CLASS (char*)(g_err_str[27])
 #define ERR_NO_INIT (char*)(g_err_str[28])
 #define ERR_OPTION_CLASSCODE (char*)(g_err_str[29])
+#define ERR_COMPILE_CLIB (char*)(g_err_str[30])
+#define ERR_NO_CLIB (char*)(g_err_str[31])
+#define ERR_HEX_ERROR (char*)(g_err_str[32])
+#define ERR_NO_CLASS_CLIB (char*)(g_err_str[32])
 
 /* compile data type numbers */
 #define CMPDATA_RESERVED  0
@@ -425,6 +461,8 @@ char* interrupt_statement();
 #define CMPDATA_UNSOLVED  5
 #define CMPDATA_TEMP      6
 #define CMPDATA_FASTFIELD 7
+#define CMPDATA_USECLIB   8
+#define CMPDATA_CLIBFUNC  9
 // Sub types follow
 #define CMPTYPE_PUBLIC_FIELD 0
 #define CMPTYPE_PRIVATE_FIELD 1
@@ -485,13 +523,15 @@ char* interrupt_statement();
 	} while (0)	
 
 #define ASM_NOP 0x00000000
+#define ASM_ADDU_A0_SP_ZERO 0x03A02021
 #define ASM_ADDU_A0_V0_ZERO 0x00402021
 #define ASM_ADDU_A1_V0_ZERO 0x00402821
 #define ASM_ADDU_A2_V0_ZERO 0x00403021
 #define ASM_ADDU_A3_V0_ZERO 0x00403821
-#define ASM_ORI_A0_ZERO_ 0x34040000
-#define ASM_LW_A0_XXXX_S8 0x8FC40000
-#define ASM_LW_A0_XXXX_S5 0x8EA40000
+#define ASM_ORI_A0_ZERO_    0x34040000
+#define ASM_ADDIU_A0_ZERO_  0x24040000
+#define ASM_LW_A0_XXXX_S8   0x8FC40000
+#define ASM_LW_A0_XXXX_S5   0x8EA40000
 
 // Interrupt macros
 // 32 different type interruptions are possible
@@ -539,3 +579,28 @@ extern int g_int_vector[];
 
 // Check if within RAM
 #define withinRAM(x) ((&RAM[0])<=((char*)(x)) && ((char*)(x))<(&RAM[RAMSIZE]))
+
+// Macros to push, restore, and pop $gp for supporting CLIB
+extern void* g_gp_stack_pointer;
+
+#define push_restore_gp() \
+	asm volatile("la $v1,%0"::"i"((int)&g_gp_stack_pointer));\
+	asm volatile("di");\
+	asm volatile("ehb");\
+	asm volatile("lw $v0,0($v1)");\
+	asm volatile("sw $gp,0($v0)");\
+	asm volatile("addiu $v0,$v0,4");\
+	asm volatile("sw $v0,0($v1)");\
+	asm volatile("ei");\
+	asm volatile("la $v1,%0"::"i"((int)&g_gp));\
+	asm volatile("lw $gp,0($v1)")
+
+#define pop_gp() \
+	asm volatile("la $v1,%0"::"i"(0+(int)&g_gp_stack_pointer));\
+	asm volatile("di");\
+	asm volatile("ehb");\
+	asm volatile("lw $v0,0($v1)");\
+	asm volatile("addiu $v0,$v0,-4");\
+	asm volatile("lw $gp,0($v0)");\
+	asm volatile("sw $v0,0($v1)");\
+	asm volatile("ei")

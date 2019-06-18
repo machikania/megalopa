@@ -89,6 +89,9 @@ void lib_serial(int baud, int parity, int bsize){
 #pragma interrupt uartint IPL3SOFT vector 31
 void uartint(){
 	int err;
+	// Push and restore $gp
+	push_restore_gp();
+
 	IFS1bits.U1RXIF=0;
 	while(U1STAbits.URXDA){
 		// Fill into the buffer while RX data is available
@@ -103,6 +106,8 @@ void uartint(){
 		g_serial_buff_write_pos++;
 		if (g_serial_buff_size<=g_serial_buff_write_pos) g_serial_buff_write_pos=0;
 	}
+	// Pop $gp
+	pop_gp();
 }
 
 void lib_serialout(int data){

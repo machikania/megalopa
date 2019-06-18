@@ -1,0 +1,110 @@
+＜Cライブラリーの利用方法＞
+
+まず、Cライブラリーの使い方について述べます。作成方法については、下の方を参照して
+下さい。
+
+Cライブラリーの本体は、「*.HEX」ファイルです。拡張子が「HEX」のファイルが、BASIC
+プログラムが置かれているのと同じディレクトリーか、LIBディレクトリーの所定の場所に
+ある事を確認して下さい。
+
+BASICプログラム中では、まず冒頭でUSECLIBステートメントを記述して下さい。
+
+USECLIB x[,y[,z[, ... ]]]
+	Cライブラリーの利用を宣言する。x,y,z等は、ライブラリー名を6文字以内の英数字
+	で指定。
+
+ここでは、「*.HEX」ファイルのファイル名を、指定します。「TCLIB.HEX」なら
+「USECLIB TCLIB」と記述します。
+
+Cライブラリー内の関数を呼び出すには、以下のいずれかの方法を取ります。それぞれの
+関数の詳しい使用方法については、Cライブラリーに付属のドキュメントを参照して下さ
+い。
+
+CLIB xxx::yyy[,z1[,z2 ...]]
+	Cライブラリー内の関数を呼び出す。xxxはライブラリー名、yyyは関数名。z1, z2等
+	は引数（オプション）。
+CLIB(xxx::yyy[,z1[,z2 ... ]])
+	Cライブラリー内の関数を呼び出し、整数を返す。xxxはライブラリー名、yyyは関数
+	名。z1, z2等は引数（オプション）。xxx::yyy([z1[,z2 ... ]])と書いても同じ。
+CLIB$(xxx::yyy[,z1[,z2 ... ]])
+	Cライブラリー内の関数を呼び出し、文字列を返す。xxxはライブラリー名、yyyは関
+	数名。z1, z2等は引数（オプション）。xxx::yyy$([z1[,z2 ... ]])と書いても同じ。
+CLIB#(xxx::yyy[,z1[,z2 ... ]])
+	Cライブラリー内の関数を呼び出し、実数を返す。xxxはライブラリー名、yyyは関
+	数名。z1, z2等は引数（オプション）。xxx::yyy#([z1[,z2 ... ]])と書いても同じ。
+
+＜使用例＞
+
+USECLIB TCLIB
+PRINT TCLIB::TEST$(0)
+PRINT TCLIB::TEST$(1)
+
+＜Cライブラリーの作成方法＞
+
+Cライブラリーを作製する場合には、MPLAB X IDEとXC32コンパイラーのver 1.42以降が
+必要です。
+
+まず、ライブラリー作成用のテンプレートをダウンロードして下さい。少なくとも、次の
+ファイルが含まれているはずです。
+
+clib.c
+clib.h
+clib_p32MX370F512H.ld
+example.c
+
+「File->Project Properties」を選択します。次の設定を確認し、異なっていれば値を
+変更してください。
+	Categories: Conf
+		Compiler Toochains: XC32 (v1.42以降)
+	Categories: xc32-gcc
+		Additinal options: -mgen-pie-static
+		Option categories: General
+			Isolate each function in a section: チェックを入れる
+		Option categories: Optimization
+			optimization-level: 1
+		Generated Command Line: -g -ffunction-sections -O1
+	Categories: xc32-ld
+		Additional options: --no-data-init
+		Option categories: General
+			Remove unused sections: チェックを入れる
+		Option categories: Libraries
+			Exclude Standard Libraries: チェックを入れる
+		Generated Command Line: --gc-sections --no-code-in-dinit --no-dinit-in-serial-mem -nostdlib -Map="${DISTDIR}/${PROJECTNAME}.${IMAGE_TYPE}.map"
+
+clib.c, clib.h, clib_p32MX370F512H.ldの３つは、通常は編集せずにそのまま使います。
+example.cを編集(必要ならばファイル名を変更)する事で、Cライブラリーを作製して下さ
+い。コンパイルして出来たHEXファイルが、完成した本体です。
+
+＜Cライブラリーの仕様＞
+
+Cライブラリーを作成するにあたり、以下の規約に従って下さい。
+
+１．グローバル変数・スタティック変数領域の容量は、128バイト。
+　・２０個ほどのグローバル変数・スタティック変数が使用可能。
+　・大きなメモリー領域が必要な場合は、malloc(), calloc(), free()を使用する。
+　・グローバル変数の初期化は、init()関数で行なわなければならない。
+　・スタティック変数は実行前の初期化はできない（常に０で初期化される）。
+
+２．パブリック関数を、その呼び出し名と共にリストアップする事。
+　・functions[]グローバル変数に指定する。
+　・フォーマットについては、example.cを参照。
+
+３．パブリック関数の引数は、４つまで。
+
+４．割り込みは使用出来ない。
+
+＜グローバル変数領域のサイズ変更＞
+
+より大きな変数領域が必要な場合は、calloc()で領域を割り当てる事が推奨されます。
+それでも、グローバル変数領域が足りない場合は、以下の方法でサイズ変更出来ます。
+
+１．clib_p[32MC370F512H.ldを編集する。
+　・「kseg1_data_mem」の設定の所、「-0x080」と「LENGTH = 0x080」となっている所
+　　を適当なサイズに変更する。
+
+２．clib.hを編集する。
+　・「#define CLIB_DATA_MEM_SIZE 0x0080」の所、上記で変更した値と同じになるよう
+　　に、編集する。
+
+＜バージョン履歴＞
+・KM-1209/KM1304 2019年？月公開。

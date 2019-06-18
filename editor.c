@@ -1839,7 +1839,8 @@ void msra(void){
 	setcursor(0,0,COLOR_NORMALTEXT);
 	printstr("Make Self-Running Application\n\n");
 	printstr("(Work on Root Directory)\n");
-
+// MOS: delete region not required
+/*
 	//カレントディレクトリを変数cwdpathにコピー
 	while(1){
 		if(FSgetcwd(cwdpath,PATHNAMEMAX)) break;
@@ -1859,30 +1860,44 @@ void msra(void){
 	pd=tempfile;
 	while(*ps!=0) *pd++=*ps++;
 	*pd=0;
-
+//*/
 	while(1){
 		setcursorcolor(COLOR_NORMALTEXT);
-		printstr("Input File Name (xxx.BAS)\n");
+// MOS: modification
+		printstr("Input File Name (xxx.HEX)\n");
+//		printstr("Input File Name (xxx.BAS)\n");
+
 		if(lineinput(tempfile,8+1+3)<0){
 			//ESCキーが押された
-			FSchdir(cwdpath); //カレントディレクトリを元に戻す
+// MOS: delete region not required
+//			FSchdir(cwdpath); //カレントディレクトリを元に戻す
 			return;
 		}
 		ps=tempfile;
 		while(*ps!='.' && *ps!=0) ps++;
 		if(ps+4>=tempfile+13 ||
 			*ps!='.' ||
-			(*(ps+1)!='b' && *(ps+1)!='B') ||
-			(*(ps+2)!='a' && *(ps+2)!='A') ||
-			(*(ps+3)!='s' && *(ps+3)!='S') ||
+// MOS: modification
+			(*(ps+1)!='h' && *(ps+1)!='H') ||
+			(*(ps+2)!='e' && *(ps+2)!='E') ||
+			(*(ps+3)!='x' && *(ps+3)!='X') ||
+//			(*(ps+1)!='b' && *(ps+1)!='B') ||
+//			(*(ps+2)!='a' && *(ps+2)!='A') ||
+//			(*(ps+3)!='s' && *(ps+3)!='S') ||
 			*(ps+4)!=0){
 				setcursorcolor(COLOR_ERRORTEXT);
-				printstr("File Name Must Be xxx.BAS\n");
+// MOS: modification
+				printstr("File Name Must Be xxx.HEX\n");
+//				printstr("File Name Must Be xxx.BAS\n");
 				continue;
 		}
 		if(overwritecheck(tempfile)) continue;
-		printstr("Writing BASIC File\n");
-		er=savetextfile(tempfile); //ファイル保存、er:エラーコード
+// MOS: modification
+		printstr("Writing HEX File\n");
+//		printstr("Writing BASIC File\n");
+// MOS: modification
+		er=create_self_running_hex(tempfile); //ファイル保存、er:エラーコード
+//		er=savetextfile(tempfile); //ファイル保存、er:エラーコード
 		if(er==0) break;
 		setcursorcolor(COLOR_ERRORTEXT);
 		if(er==ERR_CANTFILEOPEN) printstr("Bad File Name or File Error\n");
@@ -1898,6 +1913,8 @@ void msra(void){
 		}
 	}
 	printstr("OK\n\n");
+// MOS: delete region not required
+/*
 	FSremove(TEMPFILENAME); //実行時に生成する一時ファイルを削除
 	//tempfileからcurrentfileにコピーして終了
 	ps=tempfile;
@@ -1933,6 +1950,7 @@ void msra(void){
 	else if(er==ERR_CANTWRITEFILE){
 		printstr("Write Error\n");
 	}
+//*/
 	setcursorcolor(COLOR_NORMALTEXT);
 	printstr((unsigned char *)Message1);// Hit Any Key
 	inputchar(); //1文字入力待ち
@@ -2044,7 +2062,7 @@ void changewidth(void){
 }
 void run(int test){
 //KM-BASICコンパイル＆実行
-// test 0:コンパイルと実行、0以外:コンパイルのみで終了
+// test 0:コンパイルと実行、1:コンパイルのみで終了、2:コンパイルの後、HEXファイルを作製
 	int er,er2;
 	FSFILE *fp;
 	unsigned int disptoppos,cursorpos;
@@ -2120,7 +2138,18 @@ void run(int test){
 	// Enable Break key
 	g_disable_break=0;
 	//KM-BASIC実行
-	er2=runbasic(TEMPFILENAME,test);
+// MOS: modification
+	switch(test){
+		case 2:
+			er2=runbasic(TEMPFILENAME,1);
+			break;
+		case 0:
+		case 1:
+		default:
+			er2=runbasic(TEMPFILENAME,test);
+			break;
+	}
+//	er2=runbasic(TEMPFILENAME,test);
 
 	stopPCG();//システムフォントに戻す
 	setcursorcolor(COLOR_NORMALTEXT);
@@ -2163,6 +2192,12 @@ void run(int test){
 		FSremove(WORKDIRFILE); //パス名保存ファイル削除
 		break;
 	}
+// MOS: insertion
+	if (2==test && !er2) {
+		// Create HEX file as Self Running Apprication
+		msra();
+	}
+//*/
 	while(1){
 		//カレントディレクトリを元に戻す
 		if(FSchdir(cwdpath)){
@@ -2459,7 +2494,9 @@ void control_code_process(unsigned char k,unsigned char sh){
 			break;
 		case VK_F2: //F2キー
 			if(num==0) break;
-			if(sh & CHK_SHIFT) msra(); //create direct running file
+// MOS: modification
+			if(sh & CHK_SHIFT) run(2); //create direct running file
+//			if(sh & CHK_SHIFT) msra(); //create direct running file
 			else save_as(0); //ファイル名を付けて保存
 			break;
 		case VK_F3: //F3キー

@@ -779,6 +779,11 @@ int lib_file(enum functions func, int a0, int a1, int v0){
 	int i;
 	int buff[1];
 	char* str;
+
+	// Immediately return if file system is invalid.
+	// See also "case LIB_FILE:" in _call_library().
+	if (!g_fs_valid) return v0;
+
 	if (activefhandle) fhandle=s_fhandle[activefhandle-1];
 	switch(func){
 		case FUNC_FINIT:
@@ -1011,6 +1016,7 @@ int _call_library(int a0,int a1,int v0,enum libs a3){
 			scroll(g_libparams[1],v0);
 			return v0;
 		case LIB_FILE:
+			if (!g_fs_valid) err_str("File System not initialized");
 			return lib_file((enum functions)(a3 & FUNC_MASK),g_libparams[1],g_libparams[2],v0);
 		case LIB_KEYS:
 			return lib_keys(v0);

@@ -100,6 +100,7 @@ var namearray=[
 	'CHR',
 	'CIRCLE',
 	'CLEAR',
+	'CLIB',
 	'CLS',
 	'COLOR',
 	'COS',

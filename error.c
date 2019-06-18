@@ -42,6 +42,10 @@ const char* g_err_str[]={
 	"Invalid in class file",
 	"INIT method does not exist",
 	"ERR_OPTION_CLASSCODE",
+	"ERR_COMPILE_CLIB",
+	"C library not found",
+	"HEX file syntax error",
+	"Class or C library not found",
 };
 
 char* resolve_label(int s6){

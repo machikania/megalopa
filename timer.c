@@ -97,11 +97,15 @@ void stop_timer(){
 	#pragma interrupt T1Handler IPL2SOFT vector 4
 #endif
 void T1Handler(void){
+	// Push and restore $gp
+	push_restore_gp();
 	g_timer++;
 	// Clear Timer1 interrupt flag
 	IFS0bits.T1IF=0;
 	// Raise TIMER interrupt flag
 	raise_interrupt_flag(INTERRUPT_TIMER);
+	// Pop $gp
+	pop_gp();
 }
 
 void lib_usetimer(int usec){
@@ -178,10 +182,14 @@ char* timer_function(){
 
 #pragma interrupt CTHandler IPL2SOFT vector 0
 void CTHandler(void){
+	// Push and restore $gp
+	push_restore_gp();
 	// Clear CT interrupt flag
 	IFS0bits.CTIF=0;
 	// Raise TIMER interrupt flag
 	raise_interrupt_flag(INTERRUPT_CORETIMER);
+	// Pop $gp
+	pop_gp();
 }
 
 char* coretimer_function(){
@@ -238,6 +246,8 @@ void CS1Handler(void){
 	asm volatile("#":::"s7");
 	asm volatile("#":::"fp");
 	asm volatile("#":::"ra");
+	// Push and restore $gp
+	push_restore_gp();
 	while(g_interrupt_flags){
 		for(i=0;i<NUM_INTERRUPT_TYPES;i++){
 			if (g_interrupt_flags & (1<<i)) {
@@ -247,6 +257,8 @@ void CS1Handler(void){
 		}
 	}
 	IFS0bits.CS1IF=0;
+	// Pop $gp
+	pop_gp();
 }
 
 void lib_interrupt_main(int itype, int address){
@@ -338,6 +350,9 @@ const int* g_keystatus=(int*)&ps2keystatus[0];
 #pragma interrupt CS0Handler IPL3SOFT vector 1
 void CS0Handler(void){
 	int keys;
+	// Push and restore $gp
+	push_restore_gp();
+
 	IFS0bits.CS0IF=0;
 	// Call music function
 	if (g_music_active) musicint();
@@ -366,4 +381,6 @@ void CS0Handler(void){
 			if (keycodeExists()) raise_interrupt_flag(INTERRUPT_INKEY);
 		}
 	}
+	// Pop $gp
+	pop_gp();
 }

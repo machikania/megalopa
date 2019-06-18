@@ -12,6 +12,7 @@
 var filearray=[
 	'args.c',
 	'class.c',
+	'clib.c',
 	'cmpdata.c',
 	'compiler.c',
 	'debug.c',
@@ -21,6 +22,7 @@ var filearray=[
 	'float.c',
 	'function.c',
 	'globalvars.c',
+	'hexfile.c',
 	'library.c',
 	'linker.c',
 	'memory.c',
@@ -36,6 +38,7 @@ var filearray=[
 	'reservednames.js',
 	'sharedfiles.js',
 	'class.txt',
+	'clib.txt',
 ];
 
 var WshShell = WScript.CreateObject("WScript.Shell");

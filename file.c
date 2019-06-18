@@ -13,10 +13,12 @@
 #include "api.h"
 #include "compiler.h"
 
-static FSFILE* g_fhandle;
-static char* g_fbuff;
-static int g_size;
-static int g_filepoint;
+// Variables used for file handling, shared with the other components
+// Note that only one file can be open
+FSFILE* g_fhandle;
+char* g_fbuff;
+int g_size;
+int g_filepoint;
 
 char* init_file(char* buff,char* appname){
 	// Open file
@@ -87,6 +89,8 @@ char* compile_file(){
 	char* err;
 	// Read first 512 bytes
 	read_file(512);
+	// Skip BOM (UTF-8) if exists
+	if (0xEF==g_source[0] && 0xBB==g_source[1] && 0xBF==g_source[2]) g_srcpos=3;
 	// Compile line by line
 	while (g_size==512) {
 		err=compile_line();
@@ -147,13 +151,21 @@ int compile_and_link_file(char* buff,char* appname){
 		err=compile_file();
 		close_file();
 
-		// If compiling a class file is required, do it.
+		// If compiling a class file or a clib is required, do it.
 		if (err==ERR_COMPILE_CLASS) {
 			j=g_compiling_class;
 			i=compile_and_link_class(buff, g_class);
 			g_compiling_class=j;
 			if (i) return i;
 			// Continue compiling current file from the beginning.
+			continue;
+		} else if (err==ERR_COMPILE_CLIB) {
+			err=useclib_begin(buff);
+			// Continue compiling current file from the beginning.
+			if (err) {
+				printstr(err);
+				return g_fileline;
+			}
 			continue;
 		}
 		break;
@@ -239,7 +251,7 @@ int compile_and_link_class(char* buff,int class){
 			// Restore current dirctory
 			cmpdata_reset();
 			while(record=cmpdata_find(CMPDATA_TEMP)){
-				if (cwd_id=(record[0]&0xffff)) break;
+				if ((record[0]&0xffff)==cwd_id) break;
 			}
 			if (!record) break;
 			FSchdir((char*)(&record[1]));

@@ -34,6 +34,7 @@ static const char initext[];
 static const char bastext[];
 static const char class1text[];
 static const char class2text[];
+static const char hextext[];
 
 static char* readtext;
 static int filepos;
@@ -130,6 +131,9 @@ FSFILE* FSfopen(const char * fileName, const char *mode){
 	} else if (fileName[i+1]=='I' && fileName[i+2]=='N' && fileName[i+3]=='I') {
 		// INI file
 		readtext=(char*)&initext[0];
+	} else if (fileName[i+1]=='H' && fileName[i+2]=='E' && fileName[i+3]=='X') {
+		// HEX file
+		readtext=(char*)&hextext[0];
 	} else if (fileName[i+1]=='B' && fileName[i+2]=='A' && fileName[i+3]=='S') {
 		// Select BAS file
 		if (fileName[i-6]=='C' && fileName[i-5]=='L' && fileName[i-4]=='A' &&
@@ -184,6 +188,7 @@ long FSftell (FSFILE * fo){
 	return 0;
 }
 int FSfseek(FSFILE *stream, long offset, int whence){
+	filepos=offset;
 	return 0;
 }
 /*
@@ -228,12 +233,8 @@ static const char initext[]=
 "#PRINT\n";
 
 static const char bastext[]=
-"USECLASS CLASS1,CLASS2\n"
-"OPTION FASTFIELD\n"
-"CLS\n"
-"o=new(CLASS1)\n"
-"o.T1=123\n"
-"print o.T2()\n"
+"useclib TCLIB\n"
+"print hex$(TCLIB::TEST(1))\n"
 "\n"
 "\n"
 "\n"
@@ -254,6 +255,57 @@ static const char class2text[]=
 "\n"
 "\n"
 "\n";
+
+static const char hextext[]=
+":020000040000fa\n"
+":1080000000001c3cf07e9c2721e09903e0ffbd2787\n"
+":108010001c00bfaf1000bcaf030080101c80828f1b\n"
+":1080200005000010000044ac2080998f09f820035f\n"
+":10803000000000001000bc8f2480828f1c00bf8fc6\n"
+":088040000800e0032000bd2749\n"
+":020000040000fa\n"
+":107f00000000000000000080bc8100a0347f00a0c1\n"
+":107f1000ec8100a0c08100a0d08100a0a08100a0c1\n"
+":107f2000000001a0848100a0808000a0000000006b\n"
+":047f3000000000004d\n"
+":020000040000fa\n"
+":1080800000001c3c707e9c2721e09903e0ffbd2787\n"
+":108090001c00bfaf1800b0af1000bcaf06008010ce\n"
+":1080a0001c80908f01000224120082102880998f7a\n"
+":1080b000150000103080828f0000048e2c80998f74\n"
+":1080c00009f82003000000001000bc8f3080848f6e\n"
+":1080d0003c8184240000058e3480998f09f82003a8\n"
+":1080e000000000001000bc8f3080828f070000105d\n"
+":1080f0001c81422409f82003000000001000bc8ffe\n"
+":10810000030000101c00bf8f2c8142241c00bf8f75\n"
+":0c8110001800b08f0800e0032000bd271d\n"
+":020000040000fa\n"
+":10811c0048656c6c6f20576f726c64210000000016\n"
+":10812c00546869732069732061207465737400004e\n"
+":10813c00434c494220746573742e000054455354cb\n"
+":04814c00000000002f\n"
+":020000040000fa\n"
+":1081500000001c3ca07d9c2721e09903e0ffbd2787\n"
+":108160001c00bfaf1000bcaf3880998f09f8200306\n"
+":10817000000000001000bc8f1c00bf8f0800e0034f\n"
+":048180002000bd27f7\n"
+":020000040000fa\n"
+":108184000000a38c0c00a28c0c00428c0800400060\n"
+":0c81940000007c8c0800e00300000000ec\n"
+":020000040000fa\n"
+":1081a0000000838c0c00828c1800428c0800400078\n"
+":0c81b00000007c8c0800e00300000000d0\n"
+":020000040000fa\n"
+":1081bc00d08100a04001000080000000e08100a000\n"
+":0481cc0000000000af\n"
+":020000040000fa\n"
+":1081d0001880828f0000428c0800e00323102203e5\n"
+":020000040000fa\n"
+":0c81e000488100a0508100a000000000b9\n"
+":020000040000fa\n"
+":0881ec000800e00300000000a0\n"
+":00000001FF\n"
+;
 
 /*
     Test function for constructing assemblies from C codes.
@@ -283,6 +335,15 @@ int _debug_test(int a0, int a1, int a2, int a3, int param4, int param5){
 	asm volatile("nop");
 	a2&=0xFFFFFFFC;
 	return a2+a3;
+}
+
+int _debug_test2(int a0, int a1, int a2, int a3, int a4){
+	int v0;
+	v0=v0+a0;
+	v0=v0*a1;
+	v0=v0 & a3;
+	v0=v0 | a4;
+	return v0;
 }
 
 /*

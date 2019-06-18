@@ -9,6 +9,13 @@
 	This file is shared by Megalopa and Zoea
 */
 
+/*
+	All the code from this file will be assigned in MachiKania Object Section (MOS).
+	MOS will be replaced by BASIC object when constructing self-running HEX file.
+	Therefore, DO NOT place any run-time routine/romdata in this file.
+	See the MOS definition in liker script.
+*/
+
 #include "compiler.h"
 #include "api.h"
 
@@ -494,12 +501,17 @@ char* float_function(void){
 		err=gosub_function();
 	} else if (nextCodeIs("ARGS#(")) {
 		err=args_function();
+	} else if (nextCodeIs("CLIB#(")) {
+		err=clib_statement();
 	} else if (nextCodeIs("PI#")) {
 		return float_constant(3.141593);
 	} else {
 		// Check if static method of a class
 		err=static_method('#');
-		//return ERR_SYNTAX;
+		if (err==ERR_NO_CLASS) {
+			err=clib_method('#');
+			if (err==ERR_NO_CLIB) err=ERR_NO_CLASS_CLIB;
+		}
 	}
 	if (err) return err;
 	if (g_source[g_srcpos]!=')') return ERR_SYNTAX;
@@ -520,6 +532,7 @@ static const void* str_func_list[]={
 	"SYSTEM$(",system_function,
 	"FINPUT$(",finput_function,
 	"GETDIR$(",getdir_function,
+	"CLIB$(",clib_statement,
 	// Additional functions follow
 	ADDITIONAL_STR_FUNCTIONS
 };
@@ -539,7 +552,10 @@ char* str_function(void){
 	} else {
 		// Check if static method of a class
 		err=static_method('$');
-		//return ERR_SYNTAX;
+		if (err==ERR_NO_CLASS) {
+			err=clib_method('$');
+			if (err==ERR_NO_CLIB) err=ERR_NO_CLASS_CLIB;
+		}
 	}
 	if (err) return err;
 	if (g_source[g_srcpos]!=')') return ERR_SYNTAX;
@@ -609,6 +625,7 @@ static const void* int_func_list[]={
 	"EXEC(",exec_function,
 	"CORETIMER(",coretimer_function,
 	"READKEY(",readkey_function,
+	"CLIB(",clib_statement,
 	// Additional functions follow
 	ADDITIONAL_INT_FUNCTIONS
 };
@@ -626,9 +643,12 @@ char* function(void){
 		f=int_func_list[i+1];
 		err=f();
 	} else {
-		// Check if static method of a class
+		// Check if static method of a class of clib
 		err=static_method(0);
-		//return ERR_SYNTAX;
+		if (err==ERR_NO_CLASS) {
+			err=clib_method(0);
+			if (err==ERR_NO_CLIB) err=ERR_NO_CLASS_CLIB;
+		}
 	}
 	if (err) return err;
 	if (g_source[g_srcpos]!=')') return ERR_SYNTAX;

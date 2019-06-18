@@ -9,6 +9,13 @@
 	This file is shared by Megalopa and Zoea
 */
 
+/*
+	All the code from this file will be assigned in MachiKania Object Section (MOS).
+	MOS will be replaced by BASIC object when constructing self-running HEX file.
+	Therefore, DO NOT place any run-time routine/romdata in this file.
+	See the MOS definition in liker script.
+*/
+
 #include "compiler.h"
 
 /*

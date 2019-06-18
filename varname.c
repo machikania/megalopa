@@ -32,6 +32,7 @@ static const int reserved_var_names[]={
 	0x0001129b, /*CHR*/
 	0x0e7f3303, /*CIRCLE*/
 	0x0067525f, /*CLEAR*/
+	0x0003c489, /*CLIB*/
 	0x00011330, /*CLS*/
 	0x0069cb6b, /*COLOR*/
 	0x0001139f, /*COS*/
@@ -191,6 +192,18 @@ int check_var_name(){
 		}
 	}
 	// Reserved var names table was checked. This must be a long var name.
+	return i;
+}
+
+int str_to_name_int(char* str){
+	int i;
+	char* src=g_source;
+	int pos=g_srcpos;
+	g_source=str;
+	g_srcpos=0;
+	i=check_var_name();
+	g_source=src;
+	g_srcpos=pos;
 	return i;
 }
 

@@ -876,7 +876,8 @@ char* static_method(char type){
 	char* err;
 	int* data;
 	int record[3];
-	int i,opos,method,stack;
+	int i,spos,opos,method,stack;
+	spos=g_srcpos;
 	next_position();
 	// Check class name
 	i=check_var_name();
@@ -891,12 +892,15 @@ char* static_method(char type){
 			break;
 		}
 	}
+	if (i) {
+		g_srcpos=spos;
+		return ERR_NO_CLASS;
+	}
 	// Check '::'
 	if (g_source[g_srcpos]!=':') return ERR_SYNTAX;
 	g_srcpos++;
 	if (g_source[g_srcpos]!=':') return ERR_SYNTAX;
 	g_srcpos++;
-	if (i) return ERR_NO_CLASS;
 	data=(int*)data[2];
 	// Check method
 	i=check_var_name();

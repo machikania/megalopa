@@ -102,7 +102,9 @@ _GEN_EXCPT_ADDR                = _ebase_address + 0x180;
  *************************************************************************/
 MEMORY
 {
-  kseg0_program_mem     (rx)  : ORIGIN = (0x9D006000+0x1000+0x490), LENGTH = (0x80000-0x6000-0x1000-0x490-0x1000)
+  kseg0_program_mem     (rx)  : ORIGIN = (0x9D006000+0x1000+0x490), LENGTH = (0x80000-0x6000-0x1000-0x490-0x1000-0x19000)
+  /* PERSISTENT_RAM_SIZE: 0x19000, MachiKania object section (MOS) size: 0xD000 (to fit to Zoea) */
+  kseg2_program_mem     (rx)  : ORIGIN = (0x9D080000 - 0x19000), LENGTH = 0xD000 /* Some C Functions (editor and compiler) will be located here */
   kseg0_boot_mem              : ORIGIN = (0x9D006000+0x1000+0x490), LENGTH = 0 /* dummy */
   exception_mem               : ORIGIN = 0x9D006000, LENGTH = 0x1000
   kseg1_boot_mem              : ORIGIN = (0x9D006000+0x1000), LENGTH = 0x490
@@ -137,6 +139,27 @@ SECTIONS
 }
 SECTIONS
 {
+
+  /* MachiKania Object Section (MOS) (size: 0xD000) */
+  .machikaniaobjtext ORIGIN(kseg2_program_mem):
+  {
+    KEEP (*\statement.o(.text))
+    KEEP (*\function.o(.text))
+    KEEP (*\value.o(.text))
+    KEEP (*\string.o(.text))
+    KEEP (*\float.o(.text))
+    KEEP (*\cmpdata.o(.text))
+  } >kseg2_program_mem
+  .machikaniaobjrodata :
+  {
+    KEEP (*\statement.o(.rodata))
+    KEEP (*\function.o(.rodata))
+    KEEP (*\value.o(.rodata))
+    KEEP (*\string.o(.rodata))
+    KEEP (*\float.o(.rodata))
+    KEEP (*\cmpdata.o(.rodata))
+  } >kseg2_program_mem
+
   /* Boot Sections */
   .reset _RESET_ADDR :
   {
