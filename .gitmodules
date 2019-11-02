@@ -1,0 +1,3 @@
+[submodule "interface/lib_videoout_megalopa"]
+	path = interface/lib_videoout_megalopa
+	url = https://github.com/KenKenMkIISR/lib_videoout_megalopa.git
