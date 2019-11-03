@@ -233,19 +233,18 @@ static const char initext[]=
 "#PRINT\n";
 
 static const char bastext[]=
-"useclib TCLIB\n"
-"print hex$(TCLIB::TEST(1))\n"
-"\n"
-"\n"
-"\n"
-"\n";
+"CLS\n"
+"USECLASS CLASS1\n"
+"B=NEW(CLASS1)\n"
+"B.X0=99999\n"
+"B.LOCATE()\n"
+"END\n";
 
 static const char class1text[]=
-"FIELD T1\n"
-"method T2\n"
-" return T1+100\n"
-"\n"
-"\n";
+"FIELD PUBLIC X0,Y0\n"
+"METHOD LOCATE\n"
+"  print X0\n"
+"RETURN\n";
 
 static const char class2text[]=
 "FIELD T3\n"

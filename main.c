@@ -27,6 +27,8 @@
 		PS/2,   Timer5, vector 20, priority 4
 		MUSIC,  CS0,    vector  1, priority 2
 		SERIAL, UART,   vector 31, priority 3
+		TIMER,  Timer1, vector  4, priority 3
+		INT,    CS1,    vector  2, priority 1
 	
 	タイマー
 		Timer1 未使用
