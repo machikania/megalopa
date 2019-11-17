@@ -246,6 +246,8 @@ void CS1Handler(void){
 	asm volatile("#":::"s7");
 	asm volatile("#":::"fp");
 	asm volatile("#":::"ra");
+	// Disable CS1 interrupt
+	IEC0bits.CS1IE=0;
 	// Push and restore $gp
 	push_restore_gp();
 	while(g_interrupt_flags){
@@ -256,9 +258,11 @@ void CS1Handler(void){
 			}
 		}
 	}
-	IFS0bits.CS1IF=0;
 	// Pop $gp
 	pop_gp();
+	// Enable CS1 interrupt
+	IFS0bits.CS1IF=0;
+	IEC0bits.CS1IE=1;
 }
 
 void lib_interrupt_main(int itype, int address){
