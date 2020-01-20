@@ -7,7 +7,7 @@
 
 #define MEGALOPA
 #define SYSVER1 "Megalopa"
-#define SYSVER2 "1.3.1"
+#define SYSVER2 "1.3.2"
 #define BASVER "KM-1303"
 
 #define INIFILE "MACHIKAM.INI" // ‰Šúİ’èƒtƒ@ƒCƒ‹
