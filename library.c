@@ -834,7 +834,7 @@ int lib_file(enum functions func, int a0, int a1, int v0){
 			switch(v0){
 				case 1:
 				case 2:
-					if (s_fhandle[v0]) {
+					if (s_fhandle[v0-1]) {
 						activefhandle=v0;
 						break;
 					}
