@@ -956,16 +956,29 @@ int lib_readkey(){
 int _call_library(int a0,int a1,int a2,enum libs a3);
 
 void call_library(void){
+	// # of registers saved is 2 (see below)
+	asm volatile("#":::"s0");
+	asm volatile("#":::"ra");
+	// Disable interrupt
+	asm volatile("lui $a2,0xbf88");
+	asm volatile("la $ra,%0"::"i"(_IEC0_CS1IE_MASK));
+	asm volatile("lw $s0,4192($a2)"); // IEC0
+	asm volatile("and $s0,$s0,$ra");
+	asm volatile("sw $s0,4196($a2)"); // IEC0CLR
+	// Store sp in g_libparams
+	asm volatile("la $a2,%0"::"i"(&g_libparams));
+	asm volatile("addiu $ra,$sp,8");  // # of registers saved is 2 (see above)
+	asm volatile("sw $ra,0($a2)");
 	// Store s6 in g_s6
 	asm volatile("la $a2,%0"::"i"(&g_s6));
 	asm volatile("sw $s6,0($a2)");
 	// Copy $v0 to $a2 as 3rd argument of function
 	asm volatile("addu $a2,$v0,$zero");
-	// Store sp in g_libparams
-	asm volatile("la $v0,%0"::"i"(&g_libparams));
-	asm volatile("sw $sp,0($v0)");
-	// Jump to main routine
-	asm volatile("j _call_library");
+	// Call main routine
+	asm volatile("jal _call_library");
+	// Enable interrupt
+	asm volatile("lui $a2,0xbf88");
+	asm volatile("sw $s0,4200($a2)"); // IEC0SET
 }
 
 int _call_library(int a0,int a1,int v0,enum libs a3){
