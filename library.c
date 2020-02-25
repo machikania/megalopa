@@ -1111,9 +1111,6 @@ int _call_library(int a0,int a1,int v0,enum libs a3){
 		case LIB_GCOLOR:
 			g_gcolor=v0;
 			return v0;
-		case LIB_WAIT:
-			lib_wait(v0);
-			return v0;
 		case LIB_CLEAR:
 			lib_clear();
 			return v0;
