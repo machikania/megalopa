@@ -956,15 +956,22 @@ int lib_readkey(){
 int _call_library(int a0,int a1,int a2,enum libs a3);
 
 void call_library(void){
-	// # of registers saved is 2 (see below)
+	// # of registers saved is 4 (see below)
 	asm volatile("#":::"s0");
+	asm volatile("#":::"s1");
+	asm volatile("#":::"s2"); // dummy and reserved for future purpose
 	asm volatile("#":::"ra");
+	// Store CS1IE in $s1
+	asm volatile("lui $a2,0xbf88");
+	asm volatile("la $s0,%0"::"i"(_IEC0_CS1IE_MASK));
+	asm volatile("lw $s1,4192($a2)"); // IEC0
+	asm volatile("and $s1,$s1,$s0");
 	// Store previous g_libparams in $s0
 	asm volatile("la $a2,%0"::"i"(&g_libparams));
 	asm volatile("lw $s0,0($a2)");
 	// Store sp in g_libparams
 	asm volatile("la $a2,%0"::"i"(&g_libparams));
-	asm volatile("addiu $ra,$sp,8");  // # of registers saved is 2 (see above)
+	asm volatile("addiu $ra,$sp,16");  // # of registers saved is 4 (see above)
 	asm volatile("sw $ra,0($a2)");
 	// Store s6 in g_s6
 	asm volatile("la $a2,%0"::"i"(&g_s6));
@@ -976,11 +983,16 @@ void call_library(void){
 	// Restore g_libparams
 	asm volatile("la $a2,%0"::"i"(&g_libparams));
 	asm volatile("sw $s0,0($a2)");
+	// Enable interrupt if disabled
+	asm volatile("lui $a2,0xbf88");
+	asm volatile("sw $s1,4200($a2)"); // IEC0SET
 }
 
 int _call_library(int a0,int a1,int v0,enum libs a3){
 	// usage: call_lib_code(LIB_XXXX);
 	// Above code takes 2 words.
+	// "IEC0CLR=_IEC0_CS1IE_MASK;" will be executed when using global variables
+	// to avoid problem in interrupt function of BASIC code.
 	check_break();
 	switch(a3 & LIB_MASK){
 		case LIB_FLOAT:
@@ -1002,6 +1014,7 @@ int _call_library(int a0,int a1,int v0,enum libs a3){
 		case LIB_VAL:
 			return lib_val((char*)v0);
 		case LIB_LETSTR:
+			IEC0CLR=_IEC0_CS1IE_MASK;
 			lib_let_str((char*)v0,a0);
 			return;
 		case LIB_CONNECT_STRING:
@@ -1013,6 +1026,7 @@ int _call_library(int a0,int a1,int v0,enum libs a3){
 			printstr((char*)v0);
 			return v0;
 		case LIB_GRAPHIC:
+			IEC0CLR=_IEC0_CS1IE_MASK;
 			return lib_graphic(v0, (enum functions)(a3 & FUNC_MASK));
 		case LIB_SPRINTF:
 			return (int)lib_sprintf((char*)v0,a0);
@@ -1063,12 +1077,16 @@ int _call_library(int a0,int a1,int v0,enum libs a3){
 		case LIB_SYSTEM:
 			return lib_system(a0, a1 ,v0, a3, g_gcolor, g_prev_x, g_prev_y);
 		case LIB_RESTORE:
+			IEC0CLR=_IEC0_CS1IE_MASK;
 			return lib_read(0,v0);
 		case LIB_RESTORE2:
+			IEC0CLR=_IEC0_CS1IE_MASK;
 			return lib_read(1,v0);
 		case LIB_READ:
+			IEC0CLR=_IEC0_CS1IE_MASK;
 			return lib_read(0,0);
 		case LIB_CREAD:
+			IEC0CLR=_IEC0_CS1IE_MASK;
 			return lib_read(1,0);
 		case LIB_LABEL:
 			return (int)lib_label(v0);
@@ -1109,6 +1127,7 @@ int _call_library(int a0,int a1,int v0,enum libs a3){
 			g_gcolor=v0;
 			return v0;
 		case LIB_CLEAR:
+			IEC0CLR=_IEC0_CS1IE_MASK;
 			lib_clear();
 			return v0;
 		case LIB_DIM:
