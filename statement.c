@@ -1141,7 +1141,7 @@ char* wait_statement(){
 	char* err;
 	err=get_value();
 	if (err) return err;
-	call_lib_code(LIB_WAIT);
+	call_quicklib_code(lib_wait,ASM_ADDU_A0_V0_ZERO);
 	return 0;
 }
 

@@ -228,12 +228,10 @@ static const char initext[]=
 "#PRINT\n";
 
 static const char bastext[]=
-"for a=1 to 30\n"
-"i=coretimer()\n"
-"print b:b=1-b\n"
-"j=coretimer()\n"
-"print j-i\n"
-"next\n"
+"cls\n"
+"print drawcount(),\n"
+"wait 20\n"
+"print drawcount(),\n"
 "\n"
 "\n"
 "\n"

@@ -19,9 +19,12 @@ extern unsigned int g_DEVCFG1;
 #define ps2init() not_ps2init_but_init_Timer1()
 int not_ps2init_but_init_Timer1();
 
-// Do not use asm("wait") but use asm("nop")
+// Do not use asm("wait") but use asmbly for "drawcount++"
 #undef WAIT
-#define WAIT "nop"
+#define WAIT "la $k0,%0"::"i"(&drawcount));\
+	asm volatile("lhu $k1,0($k0)");\
+	asm volatile("addiu $k1,$k1,1");\
+	asm volatile("sh $k1,0($k0)"
 
 #endif // __DEBUG
 

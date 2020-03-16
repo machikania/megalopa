@@ -347,29 +347,29 @@ void CS0Handler(void){
 	IFS0bits.CS0IF=0;
 	// Call music function
 	if (g_music_active) musicint();
-	// The interrupts are valid only when CS1 is active
-	if (IEC0bits.CS1IE) {
-		// Raise DRAWCOUNT interrupt flag
+	// Interrupt handling routines follow
+	// Raise DRAWCOUNT interrupt flag if valid
+	if (g_int_vector[INTERRUPT_DRAWCOUNT]) {
 		raise_interrupt_flag(INTERRUPT_DRAWCOUNT);
-		// Check buttons
-		if (g_int_vector[INTERRUPT_KEYS]) {
-			keys=readbuttons();
-			keys&=(KEYSTART | KEYFIRE | KEYUP | KEYDOWN | KEYLEFT | KEYRIGHT);
-			if (g_keys_interrupt<-1) {
-				g_keys_interrupt++;
-			} else if (g_keys_interrupt<0) {
-				g_keys_interrupt=keys;
-			} else {
-				if (g_keys_interrupt!=keys) {
-					// Raise KEYS interrupt flag
-					raise_interrupt_flag(INTERRUPT_KEYS);
-				}
-				g_keys_interrupt=keys;
+	}
+	// Check buttons
+	if (g_int_vector[INTERRUPT_KEYS]) {
+		keys=readbuttons();
+		keys&=(KEYSTART | KEYFIRE | KEYUP | KEYDOWN | KEYLEFT | KEYRIGHT);
+		if (g_keys_interrupt<-1) {
+			g_keys_interrupt++;
+		} else if (g_keys_interrupt<0) {
+			g_keys_interrupt=keys;
+		} else {
+			if (g_keys_interrupt!=keys) {
+				// Raise KEYS interrupt flag
+				raise_interrupt_flag(INTERRUPT_KEYS);
 			}
+			g_keys_interrupt=keys;
 		}
-		// Check PS/2 keyboard input
-		if (g_int_vector[INTERRUPT_INKEY]) {
-			if (keycodeExists()) raise_interrupt_flag(INTERRUPT_INKEY);
-		}
+	}
+	// Check PS/2 keyboard input
+	if (g_int_vector[INTERRUPT_INKEY]) {
+		if (keycodeExists()) raise_interrupt_flag(INTERRUPT_INKEY);
 	}
 }

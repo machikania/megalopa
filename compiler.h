@@ -108,7 +108,7 @@ enum libs{
 	LIB_USEPCG         =LIB_STEP*34,
 	LIB_PCG            =LIB_STEP*35,
 	LIB_SCROLL         =LIB_STEP*36,
-	LIB_WAIT           =LIB_STEP*37,
+//	LIB_WAIT           =LIB_STEP*37,
 	LIB_VAR_PUSH       =LIB_STEP*38,
 	LIB_VAR_POP        =LIB_STEP*39,
 	LIB_SYSTEM         =LIB_STEP*40,
@@ -292,6 +292,7 @@ char* float_function(void);
 
 void call_library(void);
 void reset_dataread();
+void lib_wait(int period);
 
 void free_temp_str(char* str);
 void free_non_temp_str(char* str);

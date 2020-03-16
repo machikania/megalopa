@@ -8,7 +8,7 @@
 /*
 	This file is shared by Megalopa and Zoea
 */
-
+#include <xc.h>
 #include "compiler.h"
 
 /*
@@ -32,7 +32,9 @@ static int g_deleted_num;
 static int g_deleted_pointer[DELETE_LIST_SIZE];
 static int g_deleted_size[DELETE_LIST_SIZE];
 
-void register_deleted_block(int pointer, int size){
+static void* alloc_memory_s6(int size, int var_num);
+
+static void register_deleted_block(int pointer, int size){
 	// There is maximum
 	if (DELETE_LIST_SIZE<=g_deleted_num) return;
 	if (g_deleted_num) {
@@ -68,6 +70,21 @@ void* calloc_memory(int size, int var_num){
 	return ret;
 }
 void* alloc_memory(int size, int var_num){
+	void* ret;
+	if (IEC0bits.CS1IE) {
+		// Disable interrupt
+		IEC0bits.CS1IE=0;
+		// Allocate memory
+		ret=alloc_memory_s6(size,var_num);
+		// Enable interrupt
+		IEC0bits.CS1IE=1;
+	} else {
+		// Allocate memory
+		ret=alloc_memory_s6(size,var_num);
+	}
+	return ret;
+}
+static void* alloc_memory_s6(int size, int var_num){
 	// Remove temporary blocks once a line.
 	asm volatile("nop");
 	asm volatile("bltz $s6,_alloc_memory_main"); // Skip if $s6<0
@@ -191,10 +208,14 @@ void* _alloc_memory_main(int size, int var_num){
 }
 
 void free_temp_str(char* str){
-	int i,pointer;
+	int i,pointer,ei;
 	if (!str) return;
 	pointer=(int)str-(int)g_heap_mem;
 	pointer>>=2;
+	// Disable interrupt
+	ei=IEC0&_IEC0_CS1IE_MASK;
+	IEC0CLR=_IEC0_CS1IE_MASK;
+	// main for loop
 	for(i=26;i<ALLOC_VAR_NUM;i++){
 		if (g_var_pointer[i]==pointer) {
 			if (g_var_size[i] && g_var_mem[i]==(int)str) {
@@ -203,13 +224,19 @@ void free_temp_str(char* str){
 			}
 		}
 	}
+	// Enable interrupt
+	IEC0SET=ei;
 }
 
 void free_non_temp_str(char* str){
-	int i,pointer;
+	int i,pointer,ei;
 	if (!str) return;
 	pointer=(int)str-(int)g_heap_mem;
 	pointer>>=2;
+	// Disable interrupt
+	ei=IEC0&_IEC0_CS1IE_MASK;
+	IEC0CLR=_IEC0_CS1IE_MASK;
+	// main for loop
 	for(i=0;i<26;i++){
 		if (g_var_pointer[i]==pointer) {
 			if (g_var_size[i] && g_var_mem[i]==(int)str) {
@@ -229,13 +256,18 @@ void free_non_temp_str(char* str){
 			}
 		}
 	}
+	// Enable interrupt
+	IEC0SET=ei;
 }
 
 void free_perm_str(char* str){
-	int i,pointer;
+	int i,pointer,ei;
 	if (!str) return;
 	pointer=(int)str-(int)g_heap_mem;
 	pointer>>=2;
+	// Disable interrupt
+	ei=IEC0&_IEC0_CS1IE_MASK;
+	IEC0CLR=_IEC0_CS1IE_MASK;
 	// Search permanent block and delete a block if found.
 	for(i=ALLOC_PERM_BLOCK;i<ALLOC_BLOCK_NUM;i++){
 		if (g_var_pointer[i]==pointer) {
@@ -247,6 +279,8 @@ void free_perm_str(char* str){
 			}
 		}
 	}
+	// Enable interrupt
+	IEC0SET=ei;
 }
 
 void move_to_perm_block(int var_num){
@@ -264,14 +298,21 @@ void move_to_perm_block(int var_num){
 }
 
 int move_from_perm_block_if_exists(int var_num){
-	int i,pointer;
+	int i,pointer,ei;
 	pointer=(int)g_var_mem[var_num]-(int)g_heap_mem;
 	pointer>>=2;
+	// Disable interrupt
+	ei=IEC0&_IEC0_CS1IE_MASK;
+	IEC0CLR=_IEC0_CS1IE_MASK;
 	// Find stored block
 	for (i=ALLOC_PERM_BLOCK;i<ALLOC_BLOCK_NUM;i++){
 		if (0<g_var_size[i] && g_var_pointer[i]==pointer) break;
 	}
-	if (ALLOC_BLOCK_NUM<=i) return 0; // Not found
+	if (ALLOC_BLOCK_NUM<=i) {
+		// Enable interrupt
+		IEC0SET=ei;
+		return 0; // Not found
+	}
 	// Stored block found.
 	// Replace pointer
 	g_var_size[var_num]=g_var_size[i];
@@ -279,6 +320,8 @@ int move_from_perm_block_if_exists(int var_num){
 	// Clear block
 	g_var_size[i]=0;
 	g_temp_var_num_candidate=i;
+	// Enable interrupt
+	IEC0SET=ei;
 	return 1;
 }
 
@@ -288,11 +331,18 @@ void move_from_perm_block(int var_num){
 }
 
 int get_permanent_var_num(){
-	int i;
+	int i,ei;
+	// Disable interrupt
+	ei=IEC0&_IEC0_CS1IE_MASK;
+	IEC0CLR=_IEC0_CS1IE_MASK;
 	// Try candidate first
 	if (!g_var_size[g_temp_var_num_candidate]) {
 		if (ALLOC_PERM_BLOCK<g_temp_var_num_candidate && 
 				g_temp_var_num_candidate<ALLOC_BLOCK_NUM) {
+			// Reserve
+			g_var_size[g_temp_var_num_candidate]=1;
+			// Enable interrupt
+			IEC0SET=ei;
 			return g_temp_var_num_candidate++;
 		}
 	}
@@ -300,6 +350,10 @@ int get_permanent_var_num(){
 	for (i=ALLOC_PERM_BLOCK;i<ALLOC_BLOCK_NUM;i++) {
 		if (g_var_size[i]==0) {
 			g_temp_var_num_candidate=i+1;
+			// Reserve
+			g_var_size[i]=1;
+			// Enable interrupt
+			IEC0SET=ei;
 			return i;
 		}
 	}
