@@ -79,12 +79,14 @@ void init_timer(){
 }
 
 void stop_timer(){
+	int i;
 	// Stop timer
 	T1CON=0x0000;
 	IEC0bits.T1IE=0;
 	// Disable interrupt
 	IEC0bits.CS1IE=0;
 	IEC0bits.CTIE=0;
+	for(i=0;i<NUM_INTERRUPT_TYPES;i++) g_int_vector[i]=0;
 }
 
 /*
