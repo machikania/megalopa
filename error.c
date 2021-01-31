@@ -23,7 +23,7 @@ const char* g_err_str[]={
 	"Data not found",
 	"Unknown error:",
 	"Music syntax error:'",
-	" found more than twice",
+	" found twice or more",
 	"Break",
 	"Unexpected NEXT or RETURN statement",
 	"Cannot assign temporary block",
